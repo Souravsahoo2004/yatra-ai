@@ -1,0 +1,93 @@
+'use client';
+import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
+import { Send } from 'lucide-react'
+import React, { useState } from 'react'
+import axios from 'axios';
+
+import { useEffect } from 'react';
+
+type Message = {
+    role: string,
+    content: string
+}
+
+
+function ChatBox() {
+
+    const [messages, setMessages] = useState<Message[]>([]);
+    const [userInput, setUserInput] = useState<string>()
+
+    const onSend = async () => {
+        // Handle sending the message
+        if (!userInput?.trim()) return;
+
+        setUserInput('');
+        const newMsg: Message = {
+            role: 'user',
+            content: userInput
+        }
+        setMessages((prev: Message[]) => [...prev, newMsg]);
+
+
+        const result = await axios.post('/api/aimmodel', {
+            messages: [...messages, newMsg]
+
+        });
+
+        setMessages((prev: Message[]) => [...prev,
+        {
+            role: 'assistant',
+            content: result?.data?.resp
+        }]);
+        console.log(result.data);
+    }
+    return (
+
+        <div className='h-[80vh] flex flex-col'>
+            {/* Display messages */}
+            <section className='flex-1 overscroll-y-auto p-4'>
+                {messages.map((msg: Message, index) => (
+                    msg.role == 'user' ?
+
+                        <div className='flex justify-end mt-2' key={index}>
+                            <div className='max-w-lg bg-purple-700 text-white py-2 rounded-lg'>
+                                {msg.content}
+                            </div>
+                        </div> :
+
+                        <div className='flex justify-start mt-2' key={index}>
+                            <div className='max-w-lg bg-gray-100 text-black py-2 rounded-lg'>
+                                {msg.content}
+                            </div>
+                        </div>
+
+
+
+                ))}
+            </section>
+
+            {/* Input msg */}
+            <section>
+                <div className="border rounded-2xl p-4 shadow-lg relative w-full max-w-xl">
+                    <Textarea
+                        placeholder="Create Plan Your Trip From Anywhere!"
+                        className="w-full h-28 bg-transparent border-none focus-visible:ring-0 shadow-none resize-none"
+
+                        onChange={(event) => setUserInput(event.target.value)}
+                        value={userInput}
+                    />
+                    <Button
+                        size={'icon'}
+                        className="absolute bottom-6 right-6 bg-purple-700 text-white hover:bg-white hover:text-purple-700 shadow-md hover:shadow-purple-500/90 transition-all"
+                        onClick={() => onSend()}
+                    >
+                        <Send className=' h-4 w-4' />
+                    </Button>
+                </div>
+            </section>
+        </div>
+    )
+}
+
+export default ChatBox
