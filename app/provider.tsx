@@ -7,6 +7,8 @@ import { useUser } from '@clerk/nextjs';
 import { User } from 'lucide-react';
 import { UserDetailsContext } from '@/context/UserDetailsContext';
 import { useState, useContext } from 'react';
+import YatraFooter from './_components/yatrafooter';
+
 
 
 function Provider({ children,
@@ -46,6 +48,7 @@ function Provider({ children,
     <div>
       <Header />
       {children}
+     <YatraFooter/>
     </div>
     </UserDetailsContext.Provider>
   )

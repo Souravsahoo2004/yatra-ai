@@ -1,57 +1,162 @@
 import { NextRequest, NextResponse } from "next/server";
+import OpenAI from "openai";
+import { auth } from "@clerk/nextjs/server";
+import JSON5 from "json5";
 
-import OpenAI from 'openai';
+// ✅ Configure OpenRouter
 export const openai = new OpenAI({
-  baseURL: 'https://openrouter.ai/api/v1',
-  apiKey: 'process.env.OPENAI_API_KEY',
-  
+  baseURL: "https://openrouter.ai/api/v1",
+  apiKey: process.env.OPENROUTER_API_KEY,
 });
 
-const PROMPT =`
-You are an AI Trip Planner Agent. Your goal is to help the user plan a trip by asking one relevant trip-related question at a time.
-Only ask questions about the following details in order, and wait for the user's answer before asking the next:
-1. Starting location (source)
-2. Destination city or country
-3. Group size (Solo, Couple, Family, Friends)
-4. Budget (Low, Medium, High)
-5. Trip duration (number of days)
-6. Travel interests (e.g., adventure, sightseeing, cultural, food, nightlife, relaxation)
-7. Special requirements or preferences (if any)
-Do not ask multiple questions at once, and never ask irrelevant questions.
-If any answer is missing or unclear, politely ask the user to clarify before proceeding.
-Always maintain a conversational, interactive style while asking questions.
-Along with response also send which UI component to display for generative UI for example 'budget/groupSize/TripDuration/Final), where Final means Al generating complete final output Once all required information is collected, generate and return a strict JSON response only (no explanations or extra text) with following JSON schema:
-{
-resp:'Text Resp',
+// Helper: Safe JSON parser using JSON5
+function safeJsonParse(text: string) {
+  try {
+    // Remove markdown backticks
+    text = text.replace(/```json|```/g, "").trim();
+    // Extract first {...} block
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      return JSON5.parse(jsonMatch[0]);
+    }
+  } catch (err) {
+    console.error("❌ JSON5 Parse Error:", err);
+  }
+  // Fallback to raw text
+  return { resp: text };
 }
-ui:'budget/groupSize/TripDuration/Final)'
+
+// Prompt for step-by-step questions
+const PROMPT = `
+You are an AI Trip Planner Agent.
+
+RULES:
+- Ask ONE relevant trip-planning question at a time in "resp".
+- Always include "ui" as: "groupSize", "budget", "tripDuration", "final", "none".
+- Output MUST be a single JSON object ONLY.
+
+JSON schema:
+{
+  "resp": "string",
+  "ui": "groupSize" | "budget" | "tripDuration" | "final" | "none"
+}
+
+IMPORTANT:
+- Respond ONLY with JSON. No markdown, no explanations.
 `;
 
+// Prompt for final travel plan
+const FINAL_PROMPT = `
+Generate Travel Plan in JSON ONLY (no markdown, no extra text) with this schema:
 
- 
-export async function POST (req: NextRequest){
-   const {messages}= await req.json();
-   try{
-   const completion = await openai.chat.completions.create({
-    model: 'openai/gpt-4.1-mini',
-    response_format:{type:'json_object'},
-    messages: [
+{
+  "trip_plan": {
+    "destination": "string",
+    "duration": "string",
+    "origin": "string",
+    "budget": "string",
+    "group_size": "string",
+    "hotels": [
       {
-        role:'system',
-        content:PROMPT
-      },
-      ...messages
+        "hotel_name": "string",
+        "hotel_address": "string",
+        "price_per_night": "string",
+        "hotel_image_url": "string",
+        "geo_coordinates": {
+          "latitude": "number",
+          "longitude": "number"
+        },
+        "rating": "number",
+        "description": "string"
+      }
     ],
-  });
-  console.log(completion.choices[0].message);
-  const message=completion.choices[0].message;
-  return NextResponse.json(JSON.parse(messages.content??''));
-
-   }
-   catch(e){
-    return NextResponse.json(e);
-   }
+    "itinerary": [
+      {
+        "day": "number",
+        "day_plan": "string",
+        "best_time_to_visit_day": "string",
+        "activities": [
+          {
+            "place_name": "string",
+            "place_details": "string",
+            "place_image_url": "string",
+            "geo_coordinates": {
+              "latitude": "number",
+              "longitude": "number"
+            },
+            "place_address": "string",
+            "ticket_pricing": "string",
+            "time_travel_each_location": "string",
+            "best_time_to_visit": "string"
+          }
+        ]
+      }
+    ]
+  }
 }
 
+IMPORTANT:
+- Return ONLY valid JSON according to schema.
+- No markdown, no explanations, no extra keys.
+`;
 
+export async function POST(req: NextRequest) {
+  const { userId } = await auth();
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
+  try {
+    const { messages, isFinal } = await req.json();
+
+    if (!messages || !Array.isArray(messages)) {
+      return NextResponse.json({ resp: "⚠️ No messages provided." });
+    }
+
+    const completion = await openai.chat.completions.create({
+      model: "openai/gpt-oss-20b:free",
+      max_tokens: isFinal ? 2500 : 300,
+      messages: [
+        {
+          role: "system",
+          content: (isFinal ? FINAL_PROMPT : PROMPT) + "\n\nReturn ONLY valid JSON.",
+        },
+        ...messages,
+      ],
+    });
+
+    const message = completion.choices[0]?.message?.content ?? "";
+    console.log("📝 AI raw response:", message);
+
+    let parsedResp = safeJsonParse(message);
+
+    // Nested parsing if resp contains stringified JSON
+    if (typeof parsedResp.resp === "string" && parsedResp.resp.trim().startsWith("{")) {
+      try {
+        parsedResp.resp = JSON5.parse(parsedResp.resp);
+      } catch (err) {
+        console.error("❌ Nested JSON Parse Error:", err);
+      }
+    }
+
+    // Log final trip plan for debugging
+    if (isFinal && parsedResp.resp?.trip_plan) {
+      console.log("📍 Trip Plan (Human-Readable):");
+      console.log(JSON.stringify(parsedResp.resp.trip_plan, null, 2));
+    }
+
+    return NextResponse.json(parsedResp);
+  } catch (error: any) {
+    console.error(
+      "❌ AI API Error:",
+      error.response?.data || error.message || error
+    );
+    return NextResponse.json(
+      {
+        error: "Something went wrong while calling AI API",
+        details: error.response?.data || error.message || String(error),
+      },
+      { status: 500 }
+    );
+  }
+}
