@@ -1,5 +1,5 @@
 'use client';
-import React, { use } from 'react'
+import React from 'react'
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from '@/components/ui/button'
 import { AirplayIcon, ArrowDown, Globe2, HotelIcon, ListOrderedIcon, Send } from 'lucide-react'
@@ -11,23 +11,21 @@ import { useRouter } from 'next/navigation'
 export const suggestionions = [
     {
         title: "Create New Trip",
-        icons: <Globe2 className='text-blue-400 h-5 w-5' />,
+        icons: <Globe2 className='text-blue-500 dark:text-blue-400 h-5 w-5' />,
     },
     {
         title: "Book Hotels",
-        icons: <HotelIcon className='text-orange-400 h-5 w-5' />,
+        icons: <HotelIcon className='text-orange-500 dark:text-orange-400 h-5 w-5' />,
     },
     {
-        title: "Trvel Guide",
-        icons: <AirplayIcon className='text-black-400 h-5 w-5' />,
+        title: "Travel Guide",
+        icons: <AirplayIcon className='text-gray-700 dark:text-gray-300 h-5 w-5' />,
     },
     {
         title: "List out Your Trip",
-        icons: <ListOrderedIcon className='text-green-400 h-5 w-5' />,
+        icons: <ListOrderedIcon className='text-green-500 dark:text-green-400 h-5 w-5' />,
     },
 ]
-
-
 
 
 function Hero() {
@@ -40,68 +38,67 @@ function Hero() {
             router.push('/sign-in');
             return;
         }
-        // navigate to create trip plan website
-
         router.push('/create-new-trip');
     }
-
-
 
     return (
         <div className="mt-24 flex flex-col items-center justify-center space-y-8 px-4">
             {/* content */}
             <div className="max-w-3xl w-full text-center space-y-6">
-                <h1 className="text-xl md:text-5xl font-bold">
-                    Hey, I'm Your Personal <span className="text-purple-700">Trip Planner</span>
+                <h1 className="text-xl md:text-5xl font-bold text-gray-900 dark:text-gray-100">
+                    Hey, I'm Your Personal <span className="text-purple-700 dark:text-purple-400">Trip Planner</span>
                 </h1>
-                <p className="text-lg">
+                <p className="text-lg text-gray-700 dark:text-gray-300">
                     Tell me what you want, and I'll handle the rest: Flights, Hotels, Trip Planning – all in seconds!
                 </p>
             </div>
 
             {/* input-box */}
-         
-                <div className="border rounded-2xl p-4 shadow-lg relative w-full max-w-xl">
-                    <Textarea
-                        placeholder="Create Plan Your Trip From Anywhere!"
-                        className="w-full h-28 bg-transparent border-none focus-visible:ring-0 shadow-none resize-none"
-                    />
-                    <Button
-                        size={'icon'}
-                        className="absolute bottom-6 right-6 bg-purple-700 text-white hover:bg-white hover:text-purple-700 shadow-md hover:shadow-purple-500/90 transition-all"
-                        onClick={() => onSend()}
-                    >
-                        <Send className=' h-4 w-4' />
-                    </Button>
-                </div>
-           
+            <div className="border border-gray-300 dark:border-gray-700 rounded-2xl p-4 shadow-lg dark:shadow-none bg-white dark:bg-gray-900 relative w-full max-w-xl">
+                <Textarea
+                    placeholder="Create Plan Your Trip From Anywhere!"
+                    className="w-full h-28 bg-transparent border-none focus-visible:ring-0 shadow-none resize-none text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
+                />
+                <Button
+                    size={'icon'}
+                    className="absolute bottom-6 right-6 bg-purple-700 text-white hover:bg-white hover:text-purple-700 dark:hover:bg-gray-800 dark:hover:text-purple-400 shadow-md hover:shadow-purple-500/90 transition-all"
+                    onClick={onSend}
+                >
+                    <Send className='h-4 w-4' />
+                </Button>
+            </div>
+
             {/* suggestion */}
-            <div className='flex gap-5'>
+            <div className='flex gap-5 flex-wrap justify-center'>
                 {suggestionions.map((suggestion, index) => (
-                    <div key={index} className='flex items-center gap-2 border rounded-full p-2  cursor-pointer hover:bg-purple-700 hover:text-white' >
+                    <div
+                        key={index}
+                        className='flex items-center gap-2 border border-gray-300 dark:border-gray-700 rounded-full px-3 py-2 cursor-pointer 
+                        bg-white dark:bg-gray-900 
+                        text-gray-800 dark:text-gray-200 
+                        hover:bg-purple-700 hover:text-white dark:hover:bg-purple-600 transition-colors'
+                    >
                         {suggestion.icons}
                         <h2 className='text-xs'>{suggestion.title}</h2>
                     </div>
                 ))}
-
             </div>
 
             {/* video section */}
+            <h2 className='my-7 mt-14 flex gap-2 text-center text-gray-800 dark:text-gray-200'>
+                Not Sure where to Start ? <strong className="text-purple-700 dark:text-purple-400">See How it Works!</strong>
+                <ArrowDown className="dark:text-gray-300" />
+            </h2>
 
-
-            <h2 className='my-7 mt-14 flex gap-2 text-center'>Not Sure where to Start ? <strong>See How its Works!</strong><ArrowDown /></h2>
             <HeroVideoDialog
-                className="block dark:hidden"
+                className="block"
                 animationStyle="from-center"
                 videoSrc="assets/thumbnailvedio.mp4"
                 thumbnailSrc="/assets/yt thumbnail.png"
                 thumbnailAlt="Dummy Video Thumbnail"
             />
-
-
         </div>
     );
 }
-
 
 export default Hero;

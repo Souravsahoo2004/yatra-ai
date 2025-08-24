@@ -1,4 +1,3 @@
-// app/about/page.tsx
 "use client";
 
 import Image from "next/image";
@@ -7,7 +6,7 @@ import { motion } from "framer-motion";
 
 export default function AboutPage() {
   return (
-    <main className="w-full bg-gradient-to-b from-white to-blue-50 dark:from-neutral-900 dark:to-neutral-950 py-16 px-6 md:px-20">
+    <main className="w-full bg-gradient-to-b from-white to-blue-50 dark:from-neutral-900 dark:to-neutral-950 py-16 px-6 md:px-20 transition-colors duration-300">
       <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-16 items-center">
         
         {/* Left: Text */}
@@ -16,7 +15,7 @@ export default function AboutPage() {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.7 }}
         >
-          <h1 className="text-4xl md:text-5xl font-bold text-black dark:text-black mb-6 leading-tight">
+          <h1 className="text-4xl md:text-5xl font-bold text-black dark:text-white mb-6 leading-tight">
             About <span className="text-purple-600 dark:text-purple-400">Yatra AI</span>
           </h1>
           <p className="text-gray-700 dark:text-gray-300 text-lg leading-relaxed mb-4">
@@ -48,7 +47,7 @@ export default function AboutPage() {
           transition={{ duration: 0.7 }}
         >
           <Image
-            src="/assets/About-ai.jpg" // Replace with your travel image
+            src="/assets/About-ai.jpg"
             alt="About Yatra AI"
             width={500}
             height={400}
@@ -69,16 +68,15 @@ export default function AboutPage() {
             Meet the Creator
           </h2>
           <div className="flex flex-col items-center text-center">
-            <div className="w-48 h-48 rounded-full overflow-hidden shadow-lg border-4 border-purple-200 
+            <div className="w-48 h-48 rounded-full overflow-hidden shadow-lg border-4 border-purple-200 dark:border-purple-600
                   transition-transform duration-300 ease-in-out hover:scale-105 hover:shadow-2xl">
-            
-            <Image
-              src="/assets/owner.jpg" // 👉 Place your personal photo in public/assets
-              alt="Owner of Yatra AI"
-              width={160}
-              height={160}
-              className=" w-full h-full object-cover"
-            />
+              <Image
+                src="/assets/owner.jpg"
+                alt="Owner of Yatra AI"
+                width={160}
+                height={160}
+                className="w-full h-full object-cover"
+              />
             </div>
             <h3 className="text-2xl font-bold text-purple-700 dark:text-blue-400">
               Sourav Sahoo

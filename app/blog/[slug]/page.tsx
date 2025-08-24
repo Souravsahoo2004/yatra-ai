@@ -2,7 +2,6 @@
 import React from "react";
 import { notFound } from "next/navigation";
 
-// ✅ Dummy blog data
 const blogPosts = [
   {
     id: 1,
@@ -44,31 +43,32 @@ const blogPosts = [
   },
 ];
 
-// ✅ mark function as async
 export default async function BlogDetails({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
-  const { slug } = await params; // ⬅️ FIX: await params
+  const { slug } = await params;
   const post = blogPosts.find((p) => p.slug === slug);
 
   if (!post) return notFound();
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-lg p-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6 transition-colors duration-300">
+      <div className="max-w-3xl mx-auto bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 transition-colors duration-300">
         <img
           src={post.image}
           alt={post.title}
           className="w-full h-64 object-cover rounded-xl mb-6"
         />
-        <h1 className="text-3xl font-bold mb-4">{post.title}</h1>
-        <div className="flex justify-between text-sm text-gray-500 mb-6">
+        <h1 className="text-3xl font-bold mb-4 text-gray-900 dark:text-white">
+          {post.title}
+        </h1>
+        <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400 mb-6">
           <span>✍ {post.author}</span>
           <span>{post.date}</span>
         </div>
-        <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+        <p className="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">
           {post.content}
         </p>
       </div>

@@ -1,4 +1,3 @@
-// app/blog/page.tsx
 "use client";
 
 import React, { useState } from "react";
@@ -45,7 +44,7 @@ export default function BlogPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
       {/* Hero Section */}
       <section className="bg-gradient-to-r from-purple-600 to-purple-700 text-white py-16 px-6 text-center">
         <motion.h1
@@ -63,13 +62,16 @@ export default function BlogPage() {
       {/* Search Bar */}
       <div className="flex justify-center mt-8 px-4">
         <div className="relative w-full max-w-xl">
-          <Search className="absolute left-3 top-3 text-gray-400" />
+          <Search className="absolute left-3 top-3 text-gray-400 dark:text-gray-500" />
           <input
             type="text"
             placeholder="Search blogs..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 rounded-2xl border border-gray-300 focus:ring-2 focus:ring-purple-500 outline-none"
+            className="w-full pl-10 pr-4 py-2 rounded-2xl border border-gray-300 dark:border-gray-600 
+                       bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 
+                       placeholder-gray-500 dark:placeholder-gray-400 
+                       focus:ring-2 focus:ring-purple-500 outline-none transition-colors"
           />
         </div>
       </div>
@@ -82,7 +84,7 @@ export default function BlogPage() {
               key={post.id}
               whileHover={{ scale: 1.02 }}
               transition={{ type: "spring", stiffness: 200 }}
-              className="bg-white rounded-2xl shadow-md hover:shadow-lg overflow-hidden"
+              className="bg-white dark:bg-gray-800 rounded-2xl shadow-md hover:shadow-lg overflow-hidden transition-colors"
             >
               <Image
                 src={post.image}
@@ -92,9 +94,13 @@ export default function BlogPage() {
                 className="h-48 w-full object-cover"
               />
               <div className="p-4">
-                <h2 className="text-xl font-semibold mb-2">{post.title}</h2>
-                <p className="text-gray-600 text-sm mb-3">{post.excerpt}</p>
-                <div className="flex justify-between items-center text-sm text-gray-500 mb-3">
+                <h2 className="text-xl font-semibold mb-2 text-gray-900 dark:text-gray-100">
+                  {post.title}
+                </h2>
+                <p className="text-gray-600 dark:text-gray-300 text-sm mb-3">
+                  {post.excerpt}
+                </p>
+                <div className="flex justify-between items-center text-sm text-gray-500 dark:text-gray-400 mb-3">
                   <span>✍ {post.author}</span>
                   <span>{post.date}</span>
                 </div>
@@ -107,7 +113,7 @@ export default function BlogPage() {
             </motion.div>
           ))
         ) : (
-          <p className="text-center text-gray-500 col-span-3">
+          <p className="text-center text-gray-500 dark:text-gray-400 col-span-3">
             No blog posts found.
           </p>
         )}

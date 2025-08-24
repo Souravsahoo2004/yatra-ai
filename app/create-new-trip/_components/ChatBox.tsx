@@ -1,11 +1,13 @@
 'use client';
+import { useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { useUser, useAuth } from "@clerk/nextjs";
 
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader, Send } from 'lucide-react';
 import React, { useState } from 'react';
 import axios from 'axios';
-import { useAuth } from '@clerk/nextjs';
 
 // UI components
 import EmptyBoxState from './EmptyBoxState';
@@ -15,13 +17,16 @@ import FinalUi from './FinalUi';
 import SelectDaysUi from './SelectDaysUi';
 
 type Message = {
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   content: string;
-  ui?: string;
+  ui?: any;
 };
 
 function ChatBox() {
   const { getToken } = useAuth();
+  const { user } = useUser();
+
+  const saveMessage = useMutation(api.messages.addMessage);
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [userInput, setUserInput] = useState('');
@@ -52,11 +57,21 @@ function ChatBox() {
     setLoading(true);
 
     const newMsg: Message = {
-      role: 'user',
+      role: "user",
       content: userInput.trim(),
     };
-    setMessages((prev) => [...prev, newMsg]);
+    setMessages((prev) => [...prev, { role: "user" as const, content: newMsg.content }]);
     setUserInput('');
+
+    // ✅ Save user message to Convex
+    if (user) {
+      await saveMessage({
+        tripId: tripPlan?._id || "temp",
+        userId: user.id,
+        role: "user",
+        content: newMsg.content,
+      });
+    }
 
     try {
       const token = await getToken({ template: 'convex' });
@@ -84,24 +99,41 @@ function ChatBox() {
         setTripPlan(resp?.trip_plan || {});
         const summary = generateTripSummary(resp?.trip_plan);
 
-        setMessages((prev) => [
-          ...prev,
-          { role: 'assistant', content: summary },
-        ]);
+        const aiMsg = { role: "assistant" as const, content: summary };
+        setMessages((prev) => [...prev, aiMsg]);
+
+        // ✅ Save assistant summary to Convex
+        if (user) {
+          await saveMessage({
+            tripId: resp?.trip_plan?._id || tripPlan?._id || "temp",
+            userId: user.id,
+            role: "assistant",
+            content: aiMsg.content,
+          });
+        }
 
         setLoading(false);
         return;
       }
 
-      // ✅ Normal response
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: 'assistant',
-          content: decodeURIComponent(resp?.resp?.replace(/\+/g, ' ') || "🤔 I didn’t understand that."),
-          ui: resp?.ui,
-        },
-      ]);
+      // ✅ Normal AI response
+      const aiMsg = {
+        role: "assistant" as const,
+        content: decodeURIComponent(resp?.resp?.replace(/\+/g, ' ') || "🤔 I didn’t understand that."),
+        ui: resp?.ui,
+      };
+
+      setMessages((prev) => [...prev, aiMsg]);
+
+      // ✅ Save assistant message to Convex
+      if (user) {
+        await saveMessage({
+          tripId: tripPlan?._id || "temp",
+          userId: user.id,
+          role: "assistant",
+          content: aiMsg.content,
+        });
+      }
 
       // ✅ Mark final step if AI says so
       if (resp?.ui === 'final') {
@@ -112,7 +144,7 @@ function ChatBox() {
 
       setMessages((prev) => [
         ...prev,
-        { role: 'assistant', content: "⚠️ Something went wrong. Please try again." },
+        { role: "assistant" as const, content: "⚠️ Something went wrong. Please try again." },
       ]);
     }
 
