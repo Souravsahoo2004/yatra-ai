@@ -4,7 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Button } from "@/components/ui/button"
 import { SignInButton, useUser, UserButton } from '@clerk/nextjs';
-import { UserCircle, Sun, Moon } from "lucide-react";
+import { UserCircle, Sun, Moon, Menu, X } from "lucide-react";
 import { useTheme } from "next-themes";
 
 const menuOption = [
@@ -13,12 +13,14 @@ const menuOption = [
   { name: "View My Trip", path: "/viewtrip" },
   { name: "About Us", path: "/About" },
   { name: "Blog", path: "/blog" },
+  
 ];
 
 function Header() {
   const { user, isSignedIn } = useUser();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => setMounted(true), []);
   if (!mounted) return null;
@@ -28,8 +30,8 @@ function Header() {
       className="
         fixed top-0 left-0 w-full z-50
         flex justify-between items-center
-        p-4 bg-white/90 dark:bg-gray-900/90
-        backdrop-blur-md shadow-md
+        p-4 bg-white dark:bg-gray-900
+        shadow-md
         transition-colors
       "
     >
@@ -39,8 +41,8 @@ function Header() {
         <h2 className='font-bold text-2xl dark:text-white'>Yatra AI</h2>
       </div>
 
-      {/* Menu */}
-      <nav className='flex items-center gap-8'>
+      {/* Desktop Menu */}
+      <nav className='hidden md:flex items-center gap-8'>
         {menuOption.map((menu, index) => (
           <Link key={index} href={menu.path}>
             <h2 className='text-lg hover:scale-105 transition-all hover:text-purple-700 dark:hover:text-purple-400 dark:text-white'>
@@ -64,18 +66,27 @@ function Header() {
           )}
         </button>
 
+        {/* Mobile Menu Button */}
+        <button
+          onClick={() => setIsMenuOpen(true)}
+          className="md:hidden p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition"
+        >
+          <Menu className="w-7 h-7 text-gray-800 dark:text-white" />
+        </button>
+
+        {/* Profile / Auth */}
         {!isSignedIn ? (
           <>
             <SignInButton mode='modal'>
               <Button
                 variant="outline"
-                className='bg-purple-700 text-white shadow-md hover:shadow-purple-500/50 hover:shadow-lg hover:bg-white hover:text-purple-700 transition-all'
+                className='hidden md:flex bg-purple-700 text-white shadow-md hover:shadow-purple-500/50 hover:shadow-lg hover:bg-white hover:text-purple-700 transition-all'
               >
                 Get Started
               </Button>
             </SignInButton>
             <SignInButton mode='modal'>
-              <button className="p-2 rounded-full hover:bg-gray-200 transition">
+              <button className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition">
                 <UserCircle className="h-8 w-8 text-gray-600 dark:text-white" />
               </button>
             </SignInButton>
@@ -85,7 +96,7 @@ function Header() {
             <Link href={'/create-new-trip'}>
               <Button
                 variant="outline"
-                className='bg-purple-700 text-white shadow-md hover:shadow-purple-500/50 hover:shadow-lg hover:bg-white hover:text-purple-700 transition-all'
+                className='hidden md:flex bg-purple-700 text-white shadow-md hover:shadow-purple-500/50 hover:shadow-lg hover:bg-white hover:text-purple-700 transition-all'
               >
                 Create New Trip
               </Button>
@@ -99,6 +110,57 @@ function Header() {
           </>
         )}
       </div>
+
+      {/* Mobile Corner Menu */}
+      {isMenuOpen && (
+        <div
+          className={`
+            fixed top-16 right-4 z-50 md:hidden flex flex-col
+            w-60 bg-white dark:bg-gray-900 text-black dark:text-white
+            rounded-lg shadow-lg p-4
+          `}
+        >
+          {/* Close Button */}
+          <div className="flex justify-end mb-4">
+            <button
+              onClick={() => setIsMenuOpen(false)}
+              className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition"
+            >
+              <X className={`w-6 h-6 ${theme === "dark" ? "text-white" : "text-black"}`} />
+            </button>
+          </div>
+
+          {/* Menu Links */}
+          <nav className="flex flex-col gap-4 text-lg font-medium">
+            {menuOption.map((menu, index) => (
+              <Link
+                key={index}
+                href={menu.path}
+                className="transition hover:text-purple-700 dark:hover:text-purple-400"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                {menu.name}
+              </Link>
+            ))}
+
+
+            {/* Add Create New Trip only for mobile */}
+{isSignedIn && (
+  <Link
+    href="/create-new-trip"
+    className="transition hover:text-purple-700 dark:hover:text-purple-400"
+    onClick={() => setIsMenuOpen(false)}
+  >
+    Create New Trip
+  </Link>
+)}
+
+
+
+
+          </nav>
+        </div>
+      )}
     </header>
   );
 }

@@ -1,6 +1,6 @@
 import React from "react";
 import ChatBox from "./_components/ChatBox";
-import MapWrapper from "./mapwrapper";
+
 import AiCallImmediate from "./_components/aiCallImmediate";
 
 function CreateNewTrip() {
@@ -19,7 +19,7 @@ function CreateNewTrip() {
       </div>
 
       <div>
-        <MapWrapper />
+       
       </div>
 
       {/* Invisible trip saver */}
