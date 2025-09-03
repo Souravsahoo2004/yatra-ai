@@ -35,7 +35,7 @@ function Provider({ children }: Readonly<{ children: React.ReactNode }>) {
         <div className="min-h-screen bg-white text-black dark:bg-gray-900 dark:text-white transition-colors">
           <Header />
           {children}
-          <YatraFooter />
+         
         </div>
       </UserDetailsContext.Provider>
     </ThemeProvider>

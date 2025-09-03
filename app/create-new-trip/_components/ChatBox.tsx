@@ -5,7 +5,7 @@ import { useUser, useAuth } from "@clerk/nextjs";
 
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader, Send, MapPin, Calendar, Users, DollarSign, Star, Clock } from 'lucide-react';
+import { Loader, Send, MapPin, Calendar, Users, DollarSign, Star, Clock, Building2 } from 'lucide-react';
 import React, { useState } from 'react';
 import axios from 'axios';
 
@@ -43,7 +43,7 @@ function ChatBox() {
 
     const trip = tripData.trip_plan;
     
-    let formattedPlan = ` Your Complete Trip Plan\n\n`;
+    let formattedPlan = `🎯 Your Complete Trip Plan\n\n`;
     
     // Basic Info
     formattedPlan += `📍 Destination: ${trip.destination}\n`;
@@ -92,7 +92,7 @@ function ChatBox() {
 
   // ✅ Handle View Trip button click
   const handleViewTrip = () => {
-    console.log("🔍 Checking trip plan:", tripPlan); // Debug log
+    console.log("🔍 Checking trip plan:", tripPlan);
     
     if (!tripPlan) {
       console.error("No trip plan available");
@@ -115,7 +115,6 @@ function ChatBox() {
 
     setMessages((prev) => [...prev, tripDisplayMessage]);
 
-    // Save the detailed trip plan to Convex
     if (user) {
       saveMessage({
         tripId: tripPlan?.trip_plan?._id || "temp",
@@ -128,9 +127,44 @@ function ChatBox() {
     console.log("📌 Full Trip Plan:", JSON.stringify(tripPlan, null, 2));
   };
 
+  // ✅ Handle View Hotels button click - Show only images
+  const handleViewHotels = () => {
+    console.log("🏨 Checking hotels in trip plan:", tripPlan);
+    
+    if (!tripPlan || !tripPlan.trip_plan?.hotels) {
+      console.error("No hotels available in trip plan");
+      setMessages((prev) => [...prev, {
+        role: "assistant",
+        content: "❌ Sorry, I don't have hotel recommendations ready yet. Please try generating the trip plan again.",
+        ui: "none"
+      }]);
+      return;
+    }
+
+    const hotelDisplayMessage: Message = {
+      role: "assistant",
+      content: `🏨 Hotel Images for ${tripPlan.trip_plan.destination}`,
+      ui: "hotel_images",
+      tripPlan: tripPlan
+    };
+
+    setMessages((prev) => [...prev, hotelDisplayMessage]);
+
+    if (user) {
+      saveMessage({
+        tripId: tripPlan?.trip_plan?._id || "temp",
+        userId: user.id,
+        role: "assistant",
+        content: `Hotel images displayed for ${tripPlan.trip_plan.destination}`,
+      }).catch(console.error);
+    }
+
+    console.log("🏨 Hotel images displayed");
+  };
+
   // ✅ FIXED: Auto-generate trip plan when ui: "final" is received
   const autoGenerateTripPlan = async (currentMessages: Message[]) => {
-    if (autoGenerating) return; // Prevent duplicate calls
+    if (autoGenerating) return;
     
     setAutoGenerating(true);
     setLoading(true);
@@ -138,7 +172,6 @@ function ChatBox() {
     try {
       const token = await getToken({ template: 'convex' });
       
-      // Add a system message to trigger final generation
       const finalMessage: Message = {
         role: "user",
         content: "Generate my complete trip plan now"
@@ -150,38 +183,36 @@ function ChatBox() {
         '/api/aimmodel',
         {
           messages: [...currentMessages, finalMessage],
-          isFinal: true, // ✅ Force final generation
+          isFinal: true,
         },
         {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-          timeout: 45000, // Longer timeout for trip plan generation
+          timeout: 45000,
         }
       );
 
       const resp = result.data || {};
       console.log("📨 Final API Response:", resp);
 
-      // ✅ FIXED: Check for backend error first
       if (resp.error) {
         throw new Error(resp.error);
       }
 
       if (resp.trip_plan) {
         console.log("🎯 Trip plan received:", resp.trip_plan);
-        setTripPlan(resp); // Store the entire response
+        setTripPlan(resp);
         
         const aiMsg: Message = { 
           role: "assistant", 
-          content: "🎉 Perfect! Your trip plan is ready. Click the **'View Trip'** button below to see your complete itinerary!",
+          content: "🎉 Perfect! Your trip plan is ready. Click the 'View Trip' button below to see your complete itinerary, or 'View Hotels' to see accommodation images!",
           ui: "final",
           tripPlan: resp
         };
         
         setMessages((prev) => [...prev, aiMsg]);
         
-        // Save to Convex
         if (user) {
           try {
             await saveMessage({
@@ -251,7 +282,7 @@ function ChatBox() {
         '/api/aimmodel',
         {
           messages: updatedMessages,
-          isFinal: false, // Always false for regular conversation
+          isFinal: false,
         },
         {
           headers: {
@@ -268,7 +299,6 @@ function ChatBox() {
         throw new Error("Invalid API response structure");
       }
 
-      // Handle normal AI response
       let aiContent = resp.resp || "🤔 I didn't understand that. Could you try again?";
       aiContent = decodeURIComponent(aiContent.replace(/\+/g, ' '));
 
@@ -281,18 +311,15 @@ function ChatBox() {
       const finalMessages = [...updatedMessages, aiMsg];
       setMessages(finalMessages);
 
-      // ✅ AUTO-GENERATE TRIP PLAN when ui: "final" is received
       if (resp.ui === 'final') {
         console.log("🚀 Detected final step, auto-generating trip plan...");
         setIsFinal(true);
         
-        // Wait a moment then auto-generate
         setTimeout(() => {
           autoGenerateTripPlan(finalMessages);
         }, 1000);
       }
 
-      // Save messages to Convex
       if (user) {
         try {
           await saveMessage({
@@ -348,7 +375,7 @@ function ChatBox() {
     }
   };
 
-  // ✅ UI renderer with enhanced final UI
+  // ✅ UI renderer with hotel images support
   const RenderGenerativeUi = (ui?: string, messageTripPlan?: any) => {
     if (!ui || ui === 'none') return null;
 
@@ -362,6 +389,49 @@ function ChatBox() {
       if (ui === 'tripDuration') {
         return <SelectDaysUi onSelectOption={handleUiSelection} />;
       }
+      
+      if (ui === 'hotel_images') {
+        const hotels = messageTripPlan?.trip_plan?.hotels || tripPlan?.trip_plan?.hotels || [];
+        
+        if (hotels.length === 0) {
+          return (
+            <div className="mt-4 p-4 border rounded-lg bg-gray-50">
+              <p className="text-gray-600">No hotel images available.</p>
+            </div>
+          );
+        }
+
+        return (
+          <div className="mt-4 p-4 border rounded-lg bg-gradient-to-r from-blue-50 to-green-50">
+            <div className="flex items-center gap-2 mb-4">
+              <Building2 className="w-5 h-5 text-green-600" />
+              <span className="font-semibold text-green-800">Hotel Images</span>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {hotels.map((hotel: any, index: number) => (
+                <div key={index} className="relative group">
+                  <div className="aspect-w-16 aspect-h-9 rounded-lg overflow-hidden shadow-lg">
+                    <img
+                      src={hotel.hotel_image_url || `https://images.unsplash.com/photo-1564501049412-61c2a3083791?w=400&h=300&fit=crop`}
+                      alt={hotel.hotel_name}
+                      className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
+                      onError={(e) => {
+                        e.currentTarget.src = `https://images.unsplash.com/photo-1564501049412-61c2a3083791?w=400&h=300&fit=crop`;
+                      }}
+                    />
+                    <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-60 text-white p-2">
+                      <p className="text-sm font-medium truncate">{hotel.hotel_name}</p>
+                      <p className="text-xs opacity-80">⭐ {hotel.rating}/5</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      }
+      
       if (ui === 'final') {
         return (
           <div className="mt-4 p-4 border rounded-lg bg-gradient-to-r from-purple-50 to-blue-50">
@@ -378,13 +448,25 @@ function ChatBox() {
                 <span className="text-purple-700">Creating your perfect trip...</span>
               </div>
             ) : tripPlan ? (
-              <Button
-                onClick={handleViewTrip}
-                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
-              >
-                <Calendar className="w-4 h-4" />
-                View Complete Trip Plan
-              </Button>
+              <div className="space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Button
+                    onClick={handleViewTrip}
+                    className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 w-full"
+                  >
+                    <Calendar className="w-4 h-4" />
+                    View Trip Plan
+                  </Button>
+                  
+                  <Button
+                    onClick={handleViewHotels}
+                    className="bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 w-full"
+                  >
+                    <Building2 className="w-4 h-4" />
+                    View Hotels
+                  </Button>
+                </div>
+              </div>
             ) : (
               <div className="text-center text-gray-600">
                 <p className="text-sm">Preparing your trip details...</p>
@@ -393,7 +475,7 @@ function ChatBox() {
             
             {tripPlan && (
               <div className="mt-3 text-sm text-gray-600 text-center">
-                <div className="flex items-center justify-center gap-4 text-xs">
+                <div className="flex items-center justify-center gap-2 sm:gap-4 text-xs flex-wrap">
                   <span className="flex items-center gap-1">
                     <MapPin className="w-3 h-3" />
                     {tripPlan?.trip_plan?.destination || 'Destination'}
@@ -421,76 +503,80 @@ function ChatBox() {
   };
 
   return (
-    <div className="h-[80vh] flex flex-col">
-      {/* Empty state */}
-      {messages.length === 0 && (
-        <EmptyBoxState onSelectOption={handleUiSelection} />
-      )}
+    <div className="flex flex-col h-full">
+      <div className="flex-1 flex flex-col min-h-0">
+        {/* Empty state */}
+        {messages.length === 0 && (
+          <div className="flex-shrink-0">
+            <EmptyBoxState onSelectOption={handleUiSelection} />
+          </div>
+        )}
 
-      {/* Messages */}
-      <section className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((msg, index) => (
-          msg.role === 'user' ? (
-            <div className="flex justify-end" key={index}>
-              <div className="max-w-lg bg-purple-700 text-white py-2 px-4 rounded-lg">
-                {msg.content}
-              </div>
-            </div>
-          ) : (
-            <div className="flex justify-start" key={index}>
-              <div className="max-w-4xl bg-gray-100 text-black py-2 px-4 rounded-lg">
-                <div className="whitespace-pre-line mb-2">
+        {/* Messages - Responsive scrollable area */}
+        <section className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3 md:space-y-4 min-h-0">
+          {messages.map((msg, index) => (
+            msg.role === 'user' ? (
+              <div className="flex justify-end" key={index}>
+                <div className="max-w-[85%] md:max-w-lg bg-purple-700 text-white py-2 px-3 md:px-4 rounded-lg text-sm md:text-base">
                   {msg.content}
                 </div>
-                {RenderGenerativeUi(msg.ui, msg.tripPlan)}
+              </div>
+            ) : (
+              <div className="flex justify-start" key={index}>
+                <div className="max-w-[95%] md:max-w-4xl bg-gray-100 text-black py-2 px-3 md:px-4 rounded-lg text-sm md:text-base">
+                  <div className="whitespace-pre-line mb-2">
+                    {msg.content}
+                  </div>
+                  {RenderGenerativeUi(msg.ui, msg.tripPlan)}
+                </div>
+              </div>
+            )
+          ))}
+
+          {loading && (
+            <div className="flex justify-start">
+              <div className="max-w-[85%] md:max-w-lg bg-gray-100 text-black py-2 px-3 md:px-4 rounded-lg flex items-center gap-2 text-sm md:text-base">
+                <Loader className="animate-spin w-4 h-4" />
+                <span>{autoGenerating ? "Creating your trip plan..." : "Planning your trip..."}</span>
               </div>
             </div>
-          )
-        ))}
+          )}
 
-        {loading && (
-          <div className="flex justify-start">
-            <div className="max-w-lg bg-gray-100 text-black py-2 px-4 rounded-lg flex items-center gap-2">
-              <Loader className="animate-spin w-4 h-4" />
-              <span>{autoGenerating ? "Creating your trip plan..." : "Planning your trip..."}</span>
+          {error && (
+            <div className="flex justify-center">
+              <div className="max-w-[90%] md:max-w-lg bg-red-100 text-red-700 py-2 px-3 md:px-4 rounded-lg border border-red-200 text-sm md:text-base">
+                {error}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </section>
 
-        {error && (
-          <div className="flex justify-center">
-            <div className="max-w-lg bg-red-100 text-red-700 py-2 px-4 rounded-lg border border-red-200">
-              {error}
-            </div>
+        {/* Input box - Mobile responsive */}
+        <section className="flex-shrink-0 p-3 md:p-4">
+          <div className="border rounded-2xl p-3 md:p-4 shadow-lg relative w-full max-w-xl mx-auto">
+            <Textarea
+              placeholder="Start typing here..."
+              className="w-full h-20 md:h-28 bg-transparent border-none focus-visible:ring-0 shadow-none resize-none pr-12 text-sm md:text-base"
+              onChange={(event) => setUserInput(event.target.value)}
+              value={userInput}
+              onKeyPress={handleKeyPress}
+              disabled={loading}
+            />
+            <Button
+              size={'icon'}
+              className="absolute bottom-4 md:bottom-6 right-4 md:right-6 bg-purple-700 text-white hover:bg-purple-600 shadow-md transition-all w-8 h-8 md:w-10 md:h-10"
+              onClick={onSend}
+              disabled={loading || !userInput.trim()}
+            >
+              {loading ? (
+                <Loader className="h-3 w-3 md:h-4 md:w-4 animate-spin" />
+              ) : (
+                <Send className="h-3 w-3 md:h-4 md:w-4" />
+              )}
+            </Button>
           </div>
-        )}
-      </section>
-
-      {/* Input box */}
-      <section className="p-4">
-        <div className="border rounded-2xl p-4 shadow-lg relative w-full max-w-xl mx-auto">
-          <Textarea
-            placeholder="Start typing here..."
-            className="w-full h-28 bg-transparent border-none focus-visible:ring-0 shadow-none resize-none pr-12"
-            onChange={(event) => setUserInput(event.target.value)}
-            value={userInput}
-            onKeyPress={handleKeyPress}
-            disabled={loading}
-          />
-          <Button
-            size={'icon'}
-            className="absolute bottom-6 right-6 bg-purple-700 text-white hover:bg-purple-600 shadow-md transition-all"
-            onClick={onSend}
-            disabled={loading || !userInput.trim()}
-          >
-            {loading ? (
-              <Loader className="h-4 w-4 animate-spin" />
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
-          </Button>
-        </div>
-      </section>
+        </section>
+      </div>
     </div>
   );
 }

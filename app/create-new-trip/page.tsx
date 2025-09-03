@@ -12,7 +12,7 @@ function CreateNewTrip() {
   };
 
   return (
-    <div className="flex flex-col md:flex-row items-stretch justify-center gap-6 p-10 h-screen">
+    <div className="flex flex-col md:flex-row items-stretch justify-center gap-6 p-4 md:p-10 min-h-[calc(100vh-4rem)] md:min-h-[calc(100vh-5rem)]">
       {/* ChatBox on the left */}
       <div className="w-full md:w-1/2 flex flex-col h-full">
         <div className="flex-1 h-full">
