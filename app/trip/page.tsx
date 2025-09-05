@@ -8,10 +8,30 @@ import { MapPin, Building2, ArrowRight } from 'lucide-react';
 
 function TripPage() {
   const searchParams = useSearchParams();
-
+  
   const destination = searchParams.get('destination');
   const hotel = searchParams.get('hotel');
   const image = searchParams.get('image');
+
+  // Helper function to generate unique and varied image URLs
+  const getImageUrl = (destination: string | null, hotel: string | null): string => {
+    if (!destination) return '/assets/viewtripempty.jpg';
+    
+    // Create more specific search terms
+    const baseQuery = destination.toLowerCase();
+    const hotelQuery = hotel ? `${baseQuery}+hotel+accommodation` : `${baseQuery}+travel+city+landscape`;
+    
+    // Add randomization to ensure different images
+    const randomSeed = Math.floor(Math.random() * 10000);
+    const timestamp = Date.now();
+    
+    return `https://source.unsplash.com/1600x900/?${encodeURIComponent(hotelQuery)}&sig=${randomSeed}&t=${timestamp}`;
+  };
+
+  // Generate a unique key for the image component
+  const getImageKey = (destination: string | null, hotel: string | null): string => {
+    return `trip-image-${destination || 'default'}-${hotel || 'default'}-${Date.now()}`;
+  };
 
   // ✅ If no destination → show default placeholder image
   if (!destination) {
@@ -41,11 +61,15 @@ function TripPage() {
       <Card className="w-full max-w-3xl shadow-2xl rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-800 hover:scale-[1.01] transition-transform">
         <div className="relative w-full h-[280px]">
           <Image
-            src={image || `https://source.unsplash.com/1600x900/?${destination}`}
-            alt={destination}
+            key={getImageKey(destination, hotel)} // Unique key forces re-render
+            src={image || getImageUrl(destination, hotel)} // Use helper function for dynamic URLs
+            alt={`${destination}${hotel ? ` - ${hotel}` : ''} travel destination`} // More descriptive alt text
             fill
             priority
             className="object-cover"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" // Add responsive sizes
+            placeholder="blur" // Add blur placeholder
+            blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWonpNsNxnmMcnqRyRVNzTqzNlMGUYZSeGeG1ov6Iq4AAAADEvcAdDntL4AACgAgAb//Z" // Base64 blur placeholder
           />
           <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
             <h2 className="text-3xl font-bold text-white drop-shadow-lg">

@@ -17,11 +17,13 @@ export default function AiCallImmediate({ trip }: { trip: any }) {
         startDate: trip.startDate || "N/A",
         endDate: trip.endDate || "N/A",
         notes: trip.notes || "",
-      }).then(() => {
-        console.log("✅ Trip saved to DB!");
+      }).catch((error) => {
+        // Silent error handling - no console logs visible to users
+        console.error("Failed to save trip:", error);
       });
     }
   }, [trip, user, addTripDetailed]);
 
-  return null; // no UI, just runs the save
+  // Returns nothing - completely invisible
+  return null;
 }

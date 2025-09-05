@@ -3,21 +3,14 @@ import { useUser } from "@clerk/nextjs";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Button } from "@/components/ui/button";
-import {Input} from "@/components/ui/input";
-import { useState } from "react";
 
 export default function ViewTripPage() {
   const { user } = useUser();
   const userId = user?.id || "";
 
-  // Convex hooks
+  // Convex hooks - removed addTrip since no longer needed
   const trips = useQuery(api.trips.getTrips, userId ? { userId } : "skip");
-  const addTrip = useMutation(api.trips.addTrip);
   const deleteTrip = useMutation(api.trips.deleteTrip);
-
-  // Local state for form inputs
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
 
   if (!user) {
     return (
@@ -27,42 +20,9 @@ export default function ViewTripPage() {
     );
   }
 
-  // ✅ Handle trip creation
-  const handleCreateTrip = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!title.trim()) return;
-
-    await addTrip({ userId, title, description });
-    setTitle("");
-    setDescription("");
-  };
-
   return (
     <div className="p-6 max-w-3xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">My Saved Trips</h1>
-
-      {/* Trip creation form */}
-      <form
-        onSubmit={handleCreateTrip}
-        className="mb-6 flex flex-col gap-2 border p-4 rounded-xl shadow-sm"
-      >
-        <Input
-          placeholder="Trip title..."
-          value={title}
-onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTitle(e.target.value)}
-          required
-        />
-        <Input
-          placeholder="Trip description..."
-          value={description}
-onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTitle(e.target.value)}
-        />
-        <Button type="submit" className="w-fit">
-          + Add Trip
-        </Button>
-      </form>
-
-      {/* Show trips */}
+      {/* Show trips only */}
       {!trips ? (
         <p>Loading trips...</p>
       ) : trips.length === 0 ? (

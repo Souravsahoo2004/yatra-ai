@@ -512,8 +512,8 @@ function ChatBox() {
           </div>
         )}
 
-        {/* Messages - Responsive scrollable area */}
-        <section className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3 md:space-y-4 min-h-0">
+        {/* Messages - FIXED: Added bottom padding to prevent content hiding behind textarea */}
+        <section className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3 md:space-y-4 min-h-0 pb-28 md:pb-32">
           {messages.map((msg, index) => (
             msg.role === 'user' ? (
               <div className="flex justify-end" key={index}>
@@ -551,8 +551,8 @@ function ChatBox() {
           )}
         </section>
 
-        {/* Input box - Mobile responsive */}
-        <section className="flex-shrink-0 p-3 md:p-4">
+        {/* FIXED: Textarea always fixed at bottom for both mobile and desktop */}
+        <section className="flex-shrink-0 p-3 md:p-4 fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t md:border-t-0 z-50">
           <div className="border rounded-2xl p-3 md:p-4 shadow-lg relative w-full max-w-xl mx-auto">
             <Textarea
               placeholder="Start typing here..."

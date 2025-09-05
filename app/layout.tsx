@@ -3,8 +3,8 @@ import { Outfit } from "next/font/google";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import { ConvexClientProvider } from "./ConvexClientProvider";
-import Provider from "./provider"; // ✅ import your custom Provider
-import Yatrafooterwraper from "./_components/Yatrafooterwraper";
+import Provider from "./provider";
+import ConditionalFooter from "./create-new-trip/_components/ConditionalFooter"; // ✅ Import conditional footer
 
 export const metadata: Metadata = {
   title: "Yatra AI",
@@ -31,8 +31,9 @@ export default function RootLayout({
               {/* ✅ Push content below fixed navbar */}
               <main className="pt-16">
                 {children}
-                <Yatrafooterwraper/>
               </main>
+              {/* ✅ Conditional Footer - hides on CreateNewTrip page */}
+              <ConditionalFooter />
            </Provider>
           </ConvexClientProvider>
         </body>
