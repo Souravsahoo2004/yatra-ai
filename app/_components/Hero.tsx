@@ -7,7 +7,6 @@ import HeroVideoDialog from "@/components/magicui/hero-video-dialog";
 import { useUser } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
 
-
 export const suggestionions = [
     {
         title: "Create New Trip",
@@ -26,7 +25,6 @@ export const suggestionions = [
         icons: <ListOrderedIcon className='text-green-500 h-5 w-5' />,
     },
 ]
-
 
 function Hero() {
     const { user } = useUser();
@@ -62,6 +60,7 @@ function Hero() {
                     size={'icon'}
                     className="absolute bottom-6 right-6 bg-purple-700 text-white hover:bg-white hover:text-purple-700 dark:hover:bg-gray-700 dark:hover:text-purple-300 shadow-md hover:shadow-purple-500/90 transition-all"
                     onClick={onSend}
+                    suppressHydrationWarning={true}
                 >
                     <Send className='h-4 w-4' />
                 </Button>
@@ -90,7 +89,7 @@ function Hero() {
             <HeroVideoDialog
                 className="block"
                 animationStyle="from-center"
-                videoSrc="assets/thumbnailvedio.mp4"
+                videoSrc="assets/Demo-For-AI-Trip.mp4"
                 thumbnailSrc="/assets/yt thumbnail.png"
                 thumbnailAlt="Dummy Video Thumbnail"
             />

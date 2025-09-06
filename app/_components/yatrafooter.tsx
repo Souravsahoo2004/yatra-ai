@@ -102,10 +102,12 @@ export default function YatraFooter({
                 required
                 placeholder="YatraAI@gmail.com"
                 className="flex-1 rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 outline-none transition focus:border-purple-500 dark:border-white/10 dark:bg-white/10 dark:text-white dark:placeholder-slate-400 dark:focus:border-purple-400/60 dark:focus:bg-white/15"
+                suppressHydrationWarning={true}
               />
               <button
                 type="submit"
                 className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-purple-500 to-purple-800 px-4 py-3 text-sm font-medium text-white shadow-lg shadow-purple-500/30 transition active:scale-[.98] hover:brightness-110"
+                suppressHydrationWarning={true}
               >
                 <Send className="h-4 w-4" /> Send
               </button>
@@ -155,7 +157,10 @@ export default function YatraFooter({
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
               <Globe className="h-4 w-4" />
-              <select className="bg-transparent outline-none">
+              <select 
+                className="bg-transparent outline-none"
+                suppressHydrationWarning={true}
+              >
                 <option className="bg-white dark:bg-slate-900">English (IN)</option>
                 <option className="bg-white dark:bg-slate-900">हिन्दी</option>
               </select>

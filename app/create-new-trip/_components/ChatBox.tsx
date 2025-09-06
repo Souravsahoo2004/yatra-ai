@@ -15,7 +15,6 @@ import axios from 'axios';
 import EmptyBoxState from './EmptyBoxState';
 import GroupSizeUi from './GroupSizeUi';
 import BudgetUi from './BudgetUi';
-import FinalUi from './FinalUi';
 import SelectDaysUi from './SelectDaysUi';
 
 type Message = {
