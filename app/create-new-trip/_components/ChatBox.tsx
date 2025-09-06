@@ -1,12 +1,14 @@
 'use client';
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useUser, useAuth } from "@clerk/nextjs";
+import { Id } from "@/convex/_generated/dataModel";
+import { useSearchParams } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader, Send, MapPin, Calendar, Users, DollarSign, Star, Clock, Building2 } from 'lucide-react';
-import React, { useState } from 'react';
+import { Loader, Send, MapPin, Calendar, Users, DollarSign, Star, Clock, Building2, MessageCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 // UI components
@@ -26,9 +28,25 @@ type Message = {
 function ChatBox() {
   const { getToken } = useAuth();
   const { user } = useUser();
+  const searchParams = useSearchParams();
+  const existingTripId = searchParams.get('tripId');
 
+  // ✅ NEW: Trip management mutations and queries
+  const createTrip = useMutation(api.messages.createTrip);
+  const updateTrip = useMutation(api.messages.updateTrip);
   const saveMessage = useMutation(api.messages.addMessage);
+  
+  const getExistingMessages = useQuery(
+    api.messages.getMessages, 
+    existingTripId ? { tripId: existingTripId as Id<"trips"> } : "skip"
+  );
+  const getTrip = useQuery(
+    api.messages.getTrip,
+    existingTripId ? { tripId: existingTripId as Id<"trips"> } : "skip"
+  );
 
+  // ✅ NEW: Current trip ID state
+  const [currentTripId, setCurrentTripId] = useState<string | null>(existingTripId);
   const [messages, setMessages] = useState<Message[]>([]);
   const [userInput, setUserInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -36,6 +54,30 @@ function ChatBox() {
   const [tripPlan, setTripPlan] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [autoGenerating, setAutoGenerating] = useState(false);
+
+  // ✅ NEW: Load existing conversation on mount
+  useEffect(() => {
+    if (existingTripId && getExistingMessages && getExistingMessages.length > 0) {
+      console.log("🔄 Loading existing conversation:", getExistingMessages.length, "messages");
+      
+      // Convert existing messages to your Message format
+      const convertedMessages: Message[] = getExistingMessages.map(msg => ({
+        role: msg.role as "user" | "assistant",
+        content: msg.content,
+        ui: msg.ui || "none",
+      }));
+      
+      setMessages(convertedMessages);
+      setCurrentTripId(existingTripId);
+      
+      // Check if we have trip plan data in the trip record
+      if (getTrip?.tripPlanData) {
+        console.log("🎯 Loading existing trip plan from database");
+        setTripPlan(getTrip.tripPlanData);
+        setIsFinal(true);
+      }
+    }
+  }, [existingTripId, getExistingMessages, getTrip]);
 
   // ✅ Format trip plan for display in chat
   const formatTripPlanForChat = (tripData: any) => {
@@ -115,9 +157,9 @@ function ChatBox() {
 
     setMessages((prev) => [...prev, tripDisplayMessage]);
 
-    if (user) {
+    if (user && currentTripId) {
       saveMessage({
-        tripId: tripPlan?.trip_plan?._id || "temp",
+        tripId: currentTripId as Id<"trips">,
         userId: user.id,
         role: "assistant",
         content: formattedTripPlan,
@@ -150,9 +192,9 @@ function ChatBox() {
 
     setMessages((prev) => [...prev, hotelDisplayMessage]);
 
-    if (user) {
+    if (user && currentTripId) {
       saveMessage({
-        tripId: tripPlan?.trip_plan?._id || "temp",
+        tripId: currentTripId as Id<"trips">,
         userId: user.id,
         role: "assistant",
         content: `Hotel images displayed for ${tripPlan.trip_plan.destination}`,
@@ -213,13 +255,23 @@ function ChatBox() {
         
         setMessages((prev) => [...prev, aiMsg]);
         
-        if (user) {
+        // ✅ UPDATED: Save trip plan data and update trip record
+        if (user && currentTripId) {
           try {
+            // Update trip with plan data and destination
+            await updateTrip({
+              tripId: currentTripId as Id<"trips">,
+              destination: resp.trip_plan.destination,
+              status: "completed",
+              tripPlanData: resp,
+            });
+
             await saveMessage({
-              tripId: resp.trip_plan._id || "temp",
+              tripId: currentTripId as Id<"trips">,
               userId: user.id,
               role: "assistant",
               content: aiMsg.content,
+              ui: "final",
             });
           } catch (convexError) {
             console.error("❌ Error saving to Convex:", convexError);
@@ -260,12 +312,29 @@ function ChatBox() {
     }, 100);
   };
 
-  // ✅ MAIN SEND FUNCTION - Fixed flow
+  // ✅ UPDATED: Main send function with trip creation
   const onSend = async () => {
     if (!userInput.trim() || loading) return;
 
     setLoading(true);
     setError(null);
+
+    // ✅ NEW: Create trip if this is the first message and no existing trip
+    let tripId = currentTripId;
+    if (!tripId && user) {
+      try {
+        console.log("🆕 Creating new trip conversation...");
+        const newTripId = await createTrip({
+          userId: user.id,
+          title: userInput.slice(0, 50) + (userInput.length > 50 ? "..." : ""),
+        });
+        tripId = newTripId;
+        setCurrentTripId(newTripId);
+        console.log("✅ New trip created:", newTripId);
+      } catch (error) {
+        console.error("❌ Error creating trip:", error);
+      }
+    }
 
     const newMsg: Message = {
       role: "user",
@@ -320,21 +389,31 @@ function ChatBox() {
         }, 1000);
       }
 
-      if (user) {
+      // ✅ UPDATED: Save messages with proper trip ID
+      if (user && tripId) {
         try {
           await saveMessage({
-            tripId: tripPlan?._id || "temp",
+            tripId: tripId as Id<"trips">,
             userId: user.id,
             role: "user",
             content: newMsg.content,
           });
           
           await saveMessage({
-            tripId: tripPlan?._id || "temp",
+            tripId: tripId as Id<"trips">,
             userId: user.id,
             role: "assistant",
             content: aiMsg.content,
+            ui: aiMsg.ui,
           });
+
+          // Update trip status to active if it's in planning
+          if (getTrip?.status === "planning") {
+            await updateTrip({
+              tripId: tripId as Id<"trips">,
+              status: "active",
+            });
+          }
         } catch (convexError) {
           console.error("❌ Error saving to Convex:", convexError);
         }
@@ -505,6 +584,19 @@ function ChatBox() {
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1 flex flex-col min-h-0">
+        {/* ✅ NEW: Show trip info if continuing existing conversation */}
+        {existingTripId && getTrip && (
+          <div className="flex-shrink-0 bg-purple-50 border-b border-purple-200 p-3">
+            <div className="flex items-center gap-2 text-purple-800">
+              <MessageCircle className="w-4 h-4" />
+              <span className="text-sm font-medium">Continuing: {getTrip.title}</span>
+              {getTrip.destination && (
+                <span className="text-xs text-purple-600">• {getTrip.destination}</span>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Empty state */}
         {messages.length === 0 && (
           <div className="flex-shrink-0">
@@ -555,7 +647,7 @@ function ChatBox() {
         <section className="flex-shrink-0 p-3 md:p-4 fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t md:border-t-0 z-50">
           <div className="border rounded-2xl p-3 md:p-4 shadow-lg relative w-full max-w-xl mx-auto">
             <Textarea
-              placeholder="Start typing here..."
+              placeholder={existingTripId ? "Continue your conversation..." : "Start typing here..."}
               className="w-full h-20 md:h-28 bg-transparent border-none focus-visible:ring-0 shadow-none resize-none pr-12 text-sm md:text-base"
               onChange={(event) => setUserInput(event.target.value)}
               value={userInput}

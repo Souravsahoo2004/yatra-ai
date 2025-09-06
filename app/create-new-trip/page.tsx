@@ -1,30 +1,32 @@
-import React from "react";
+// create-new-trip/page.tsx
+
+'use client';
+
+import React, { Suspense } from "react";
 import ChatBox from "./_components/ChatBox";
-import AiCallImmediate from "./_components/aiCallImmediate";
-import TripPage from "../trip/page";
 
-function CreateNewTrip() {
-  const aiTrip = {
-    destination: "Goa",
-    startDate: "2025-09-01",
-    endDate: "2025-09-07",
-    notes: "Beach and adventure trip",
-  };
-
+function CreateNewTripContent() {
   return (
     <div className="flex flex-col md:flex-row items-stretch justify-center gap-6 p-4 md:p-10 min-h-[calc(100vh-4rem)] md:min-h-[calc(100vh-5rem)]">
       {/* ChatBox on the left */}
-      <div className="w-full  flex flex-col h-full">
+      <div className="w-full flex flex-col h-full">
         <div className="flex-1 h-full">
           <ChatBox />
         </div>
       </div>
-
-      {/* TripPage (image/preview) on the right */}
-      
-      {/* Invisible trip saver */}
-      <AiCallImmediate trip={aiTrip} />
     </div>
+  );
+}
+
+function CreateNewTrip() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-700"></div>
+      </div>
+    }>
+      <CreateNewTripContent />
+    </Suspense>
   );
 }
 
