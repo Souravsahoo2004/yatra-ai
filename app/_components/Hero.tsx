@@ -89,7 +89,7 @@ function Hero() {
             <HeroVideoDialog
                 className="block"
                 animationStyle="from-center"
-                videoSrc="/assets/Demo-For-AI-Trip2.mp4"
+                videoSrc="https://www.youtube.com/embed/WulPlrvIfRI"
                 thumbnailSrc="/assets/yt thumbnail.png"
                 thumbnailAlt="Dummy Video Thumbnail"
             />
