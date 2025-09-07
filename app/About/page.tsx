@@ -93,7 +93,7 @@ export default function AboutPage() {
                   GitHub
                 </button>
               </Link>
-              <Link href="https://www.linkedin.com/in/sourav-sahoo-2004" target="_blank">
+              <Link href="https://www.linkedin.com/in/sourav-sahoo7/" target="_blank">
                 <button className="px-4 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-800 transition">
                   LinkedIn
                 </button>
