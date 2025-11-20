@@ -202,7 +202,12 @@ export async function POST(req: NextRequest) {
 
     console.log("🔍 Request details - isFinal:", isFinal, "messages count:", messages.length);
 
-    const modelOptions = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro"];
+    const modelOptions = [
+  "gemini-2.5-flash",      // Best balance of speed & capability
+  "gemini-2.0-flash-001",  // Stable fallback
+  "gemini-2.5-pro"         // Most capable, if needed
+];
+
     let result;
     let modelUsed = "";
 
@@ -216,7 +221,9 @@ export async function POST(req: NextRequest) {
             temperature: 0.3,
             topK: 40,
             topP: 0.95,
-            maxOutputTokens: isFinal ? 2000 : 300,
+           // Line ~256 in your code
+maxOutputTokens: isFinal ? 8000 : 300, // Changed from 2000
+
           }
         });
 
