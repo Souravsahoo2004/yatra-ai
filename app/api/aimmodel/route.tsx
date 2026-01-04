@@ -33,13 +33,11 @@ async function retryWithBackoff<T>(
   throw new Error('Max retries exceeded');
 }
 
-// ✅ FIXED: Better JSON parsing function
+// ✅ IMPROVED: Better JSON parsing function with better fallback
 function safeJsonParse(text: string) {
   try {
-    // Clean up the text
-    text = text
-      .replace(/``````/g, "")
-      .trim();
+    // Clean up the text - remove markdown code blocks
+    text = text.replace(/```json|```/g, "").trim();
 
     // Try parsing the entire text first
     try {
@@ -74,11 +72,15 @@ function safeJsonParse(text: string) {
     console.error("❌ JSON5 Parse Error:", err);
   }
   
+  // ✅ IMPROVED: Better fallback that doesn't show raw text
   console.log("⚠️ Using fallback response");
-  return { resp: text };
+  return { 
+    resp: "Could you please rephrase that? I want to make sure I understand correctly.", 
+    ui: "none" 
+  };
 }
 
-// ✅ Same prompts as before
+// ✅ IMPROVED: Stricter prompt for JSON-only output
 const PROMPT = `
 You are an AI Trip Planner Assistant. Your job is to gather trip information step by step.
 
@@ -96,7 +98,10 @@ RULES:
 - Progress logically through the steps
 - When you have destination, group size, budget, and duration, use ui: "final"
 
-OUTPUT FORMAT (JSON only):
+CRITICAL: You MUST respond with ONLY valid JSON. No additional text before or after.
+NO markdown code blocks. NO explanations. ONLY the JSON object.
+
+OUTPUT FORMAT:
 {
   "resp": "Your specific question here",
   "ui": "groupSize" | "budget" | "tripDuration" | "final" | "none"
@@ -154,7 +159,7 @@ Create a JSON response with this structure:
   }
 }
 
-IMPORTANT: Return ONLY the JSON. No markdown, no explanations.
+IMPORTANT: Return ONLY the JSON. No markdown, no explanations, no code blocks.
 `;
 
 // ✅ Better conversation analysis
@@ -172,16 +177,6 @@ function analyzeConversation(messages: any[]) {
   const hasDuration = /\d+\s*days?|\d+\s*weeks?|days:|week|day/.test(conversation);
   
   return { hasDestination, hasGroupSize, hasBudget, hasDuration };
-}
-
-function formatMessagesForGemini(messages: any[]) {
-  return messages.map(msg => {
-    const role = msg.role === 'assistant' ? 'model' : 'user';
-    return {
-      role: role,
-      parts: [{ text: msg.content }]
-    };
-  });
 }
 
 export async function POST(req: NextRequest) {
@@ -203,10 +198,10 @@ export async function POST(req: NextRequest) {
     console.log("🔍 Request details - isFinal:", isFinal, "messages count:", messages.length);
 
     const modelOptions = [
-  "gemini-2.5-flash",      // Best balance of speed & capability
-  "gemini-2.0-flash-001",  // Stable fallback
-  "gemini-2.5-pro"         // Most capable, if needed
-];
+      "gemini-2.5-flash",      // Best balance of speed & capability
+      "gemini-2.0-flash-001",  // Stable fallback
+      "gemini-2.5-pro"         // Most capable, if needed
+    ];
 
     let result;
     let modelUsed = "";
@@ -221,9 +216,7 @@ export async function POST(req: NextRequest) {
             temperature: 0.3,
             topK: 40,
             topP: 0.95,
-           // Line ~256 in your code
-maxOutputTokens: isFinal ? 8000 : 300, // Changed from 2000
-
+            maxOutputTokens: isFinal ? 8000 : 1024, // ✅ FIXED: Increased from 300 to 1024
           }
         });
 
@@ -281,6 +274,12 @@ Based on this analysis, ask the next logical question. If all info is collected,
     const message = response.text();
 
     console.log(`📝 ${modelUsed} response:`, message);
+
+    // ✅ ADDED: Validate response length
+    if (!isFinal && message.length < 20) {
+      console.error("❌ Response too short, likely incomplete");
+      throw new Error("Incomplete response from AI");
+    }
 
     let parsedResp = safeJsonParse(message);
 
