@@ -80,7 +80,7 @@ function Hero() {
                     </div>
                 ))}
             </div>
-
+     
             {/* video section */}
             <h2 className='my-7 mt-14 flex gap-2 text-center text-gray-800 dark:text-gray-200'>
                 Not Sure where to Start ? <strong className="text-gray-900 dark:text-white">See How it Works!</strong>
